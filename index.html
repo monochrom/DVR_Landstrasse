@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DVR Landstraße · Fahrrad-Modul · Prototyp</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+  <!-- ============================================================
+       Fahrrad-Modul (Figma: fahrrad-module, max. 1920 breit, fluid)
+       ============================================================ -->
+  <section class="fahrrad-module">
+
+    <!-- Intro -->
+    <header class="module__intro">
+      <span class="tag">Perspektive Fahrrad</span>
+      <div class="module__copy">
+        <h1 class="headline-1">Immer sicher<br>im Sattel</h1>
+        <p class="body-1">Mit unserer neuen Kampagne machen wir auf typische Risikosituationen aufmerksam - direkt, einprägsam und mit einem Augenzwinkern. Auf Plakaten und Tankstellen an Landstraßen, im Radio und auf Social Media. Für mehr Aufmerksamkeit und mehr Sicherheit auf jeder Fahrt.</p>
+      </div>
+    </header>
+
+    <!-- Tipps-Slider -->
+    <div class="tips-slider" data-slider>
+      <div class="tips-slider__stage">
+      <div class="tips-slider__viewport" data-viewport>
+        <ul class="tips-slider__track" data-track>
+
+          <li class="tip is-active" data-tip>
+            <div class="tip__img"><img src="assets/slide-1.png" alt="Rennradfahrende in einer Serpentine"></div>
+            <div class="tip__pill">
+              <div class="tip__content">
+                <div class="tip__index" aria-hidden="true">
+                  <span class="tip__number">01</span>
+                  <span class="tip__line"></span>
+                </div>
+                <div class="tip__text">
+                  <h3>Kurven, Steigungen und Gefälle</h3>
+                  <p>Landstraßen stellen Radfahrende immer wieder vor neue Situationen: enge Kurven, Steigungen und Gefälle, aber auch Einmündungen und Kreuzungen erfordern deine besondere Aufmerksamkeit. Deshalb gilt: vorausschauend fahren und das Tempo den Gegebenheiten anpassen. So erkennst du mögliche Gefahren frühzeitig und verschaffst dir wertvolle Zeit zum Reagieren – und kommst sicher ans Ziel.</p>
+                </div>
+              </div>
+            </div>
+          </li>
+
+          <li class="tip" data-tip>
+            <div class="tip__img"><img src="assets/slide-2.png" alt="Radfahrerin mit Helm auf der Landstraße"></div>
+            <div class="tip__pill">
+              <div class="tip__content">
+                <div class="tip__index" aria-hidden="true">
+                  <span class="tip__number">02</span>
+                  <span class="tip__line"></span>
+                </div>
+                <div class="tip__text">
+                  <h3>Sicher radeln auf der Landstraße</h3>
+                  <p>Außerorts sind Autos und Lkw meist deutlich schneller unterwegs als Radfahrende. Fahrt mit euren Rädern deshalb möglichst hintereinander und – je nach Fahrbahnbeschaffenheit – weit rechts. Gleichzeitig solltest du den Abstand zum rechten Fahrbahnrand so wählen, dass Autofahrende bei Gegenverkehr nicht zu riskanten Überholmanövern verleitet werden. So wird klar: Ein sicheres Überholen ist nur möglich, wenn ausreichend Platz vorhanden ist.</p>
+                </div>
+              </div>
+            </div>
+          </li>
+
+          <li class="tip" data-tip>
+            <div class="tip__img"><img src="assets/slide-3.png" alt="Familie fährt hintereinander auf einem Radweg"></div>
+            <div class="tip__pill">
+              <div class="tip__content">
+                <div class="tip__index" aria-hidden="true">
+                  <span class="tip__number">03</span>
+                  <span class="tip__line"></span>
+                </div>
+                <div class="tip__text">
+                  <h3>Radweg oder Fahrbahn?</h3>
+                  <p>Gibt es entlang der Landstraße einen benutzungspflichtigen Radweg, muss dieser genutzt werden. Fehlt ein solcher, fährst du mit dem Rad auf der Fahrbahn. Eine Ausnahme bilden S-Pedelecs: Da sie Geschwindigkeiten von bis zu 45 km/h erreichen, dürfen sie grundsätzlich nicht auf Radwegen fahren – es sei denn, ein entsprechendes Verkehrszeichen erlaubt dies.</p>
+                </div>
+              </div>
+            </div>
+          </li>
+
+          <li class="tip" data-tip>
+            <div class="tip__img"><img src="assets/slide-4.png" alt="Fahrradlenker mit eingeschaltetem Licht"></div>
+            <div class="tip__pill">
+              <div class="tip__content">
+                <div class="tip__index" aria-hidden="true">
+                  <span class="tip__number">04</span>
+                  <span class="tip__line"></span>
+                </div>
+                <div class="tip__text">
+                  <h3>Wie sehen mich die anderen?</h3>
+                  <p>Zum sicheren Radfahren gehört auch, dass dein Fahrrad über alle vorgeschriebenen Leuchten und Reflektoren verfügt. Darüber hinaus kannst du deine Sichtbarkeit für andere Verkehrsteilnehmende erhöhen, indem du Kleidung und Accessoires mit fluoreszierenden und retroreflektierenden Materialien trägst, etwa eine Warnweste.</p>
+                </div>
+              </div>
+            </div>
+          </li>
+
+        </ul>
+      </div>
+
+      <button class="btn btn--outline tips-slider__next" type="button" data-next>Nächster Tipp</button>
+      </div>
+
+      <ol class="tips-slider__dots" data-dots aria-hidden="true">
+        <li class="is-active"></li>
+        <li></li>
+        <li></li>
+        <li></li>
+      </ol>
+
+      <p class="visually-hidden" aria-live="polite" data-status>Tipp 1 von 4</p>
+    </div>
+
+    <!-- CTA -->
+    <div class="cta">
+      <div class="cta__body">
+        <div class="cta__text">
+          <h2>Du willst mehr Tipps zum sicheren Fahren mit dem Pedelec?</h2>
+          <p>Besuche unsere Kampagnenseite “E im Griff” und entdecke weitere Sicherheitstipps rund um das Thema Pedelec!</p>
+        </div>
+        <a class="btn btn--primary" href="#">
+          <span>Zur Kampagnenseite</span>
+          <img class="btn__icon" src="assets/arrow.svg" alt="">
+        </a>
+      </div>
+      <div class="cta__media">
+        <img src="assets/cta.jpg" alt="Mountainbikerin auf einer Bergwiese">
+      </div>
+    </div>
+
+  </section>
+
+  <p class="proto-note">Prototyp · Fahrrad-Modul · Desktop: „Nächster Tipp“ oder Pfeiltasten · Mobile: Wischen</p>
+
+  <script src="js/slider.js"></script>
+</body>
+</html>

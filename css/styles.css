@@ -1,0 +1,663 @@
+/* ==========================================================================
+   DVR Landstraße · Fahrrad-Modul · Prototyp
+   --------------------------------------------------------------------------
+   Responsive-Prinzip
+   - Typografie: fluide Tokens (clamp), 390px → 1920px.
+   - Slider Desktop (≥ 1100px): Figma-Geometrie in „Design-Pixeln“ (--px).
+     1 Design-Pixel = 1px bei 1920px Modulbreite, darunter proportional kleiner.
+     Kreis und Pille schrumpfen also mit dem Viewport, die Schrift bleibt
+     lesbar (clamp) und die Pille wächst bei Bedarf in der Höhe.
+   - Slider Mobile (< 1100px): gestapelt. Kreis oben, Karte darunter, der Kreis
+     taucht in die Karte ein (dieselbe Überlappungs-Idee wie auf Desktop, nur
+     vertikal). Ein Slide = volle Breite, kein Hervorlugen, kein Button,
+     Wischen + Indikator.
+   ========================================================================== */
+
+:root {
+  /* Farben (Figma: colors/landstrasse/…) */
+  --c-dark-blue-500: #15253d;
+  --c-sand-50: #e5ede1;
+  --c-sand-10: #f3feed;
+  --c-yellow-300: #f3cf32;
+
+  /* Schriften – FatFrank/Roboto im Prototyp durch Helvetica ersetzt */
+  --font-display: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-body: "Helvetica Neue", Helvetica, Arial, sans-serif;
+
+  /* Fluide Typo-Skala: min @ 390px → max @ 1920px (Figma-Wert) */
+  --fs-headline-1: clamp(44px, 29.7px + 3.66vw, 100px);
+  --fs-headline-2: clamp(40px, 33.9px + 1.57vw, 64px);
+  --fs-headline-3: clamp(28px, 25px + 0.78vw, 40px);
+  --fs-headline-4: clamp(24px, 22px + 0.52vw, 32px);
+  --fs-body-1: clamp(18px, 16.5px + 0.39vw, 24px);
+  --fs-body-2: clamp(16px, 15.5px + 0.13vw, 18px);
+  --fs-label: 15px;
+
+  /* Fluide Abstände */
+  --module-pad: clamp(24px, 3.33vw, 64px);          /* 64 @ 1920 */
+  --module-radius: clamp(24px, 2.08vw, 40px);       /* 40 @ 1920 */
+  --intro-gap: clamp(32px, 3.33vw, 64px);
+  --copy-gap: clamp(16px, 1.25vw, 24px);
+  --cta-gap: clamp(32px, 2.66vw, 51px);
+
+  /* Motion */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out-sine: cubic-bezier(0.45, 0, 0.55, 1);
+  --t-img: 1400ms;            /* Bildkreis: schneller */
+  --t-pill: 1700ms;           /* Content-Pille: langsamer, kommt hinterher */
+  --t-pill-delay: 150ms;
+  --t-fade: 700ms;            /* Einblenden des aktiven Slides */
+  --ease-in-quart: cubic-bezier(0.5, 0, 0.75, 0);
+  /* Ausblenden des alten Slides: so lang wie seine Fahrt und mit Ease-in –
+     er bleibt fast bis zum Schluss sichtbar und geistert erst kurz vor dem Stillstand ab */
+  --t-fade-out: var(--t-pill);
+  --t-text-out: 600ms;        /* Text des alten Slides blendet ruhig aus */
+  --t-text: 900ms;            /* Text-Einblendung */
+  --text-delay: 700ms;        /* Text startet, wenn die Pille fast steht */
+  --text-stagger: 90ms;
+  --t-roll-out: 1100ms;       /* „Abrollen“ des Bildkreises: Hinweg zur Amplitude … */
+  --t-roll-back: 1700ms;      /* … und langsam zurück (Summe 2800ms, läuft länger als der Slide-Wechsel) */
+  --wheel-roll: 7deg;         /* Amplitude der Rotation, Vorzeichen setzt JS je nach Richtung */
+}
+
+/* --------------------------------------------------------------------------
+   Basis
+   -------------------------------------------------------------------------- */
+
+*,
+*::before,
+*::after { box-sizing: border-box; }
+
+html, body { margin: 0; }
+
+body {
+  background: #fff;
+  font-family: var(--font-body);
+  color: var(--c-dark-blue-500);
+  -webkit-font-smoothing: antialiased;
+}
+
+img { -webkit-user-drag: none; }
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.proto-note {
+  margin: 0;
+  padding: 24px 16px 40px;
+  font: 400 13px/1.5 var(--font-body);
+  color: #8a9189;
+  text-align: center;
+}
+
+/* --------------------------------------------------------------------------
+   Modul
+   -------------------------------------------------------------------------- */
+
+.fahrrad-module {
+  /* Container für cqw-Einheiten. Achtung: 100cqw = Content-Box des Moduls
+     (ohne Padding), deshalb wird das Padding für die Außenbreite wieder addiert. */
+  container-type: inline-size;
+  --px: min(calc((100cqw + 2 * var(--module-pad)) / 1920), 1px);   /* 1 Design-Pixel */
+
+  position: relative;
+  width: 100%;
+  max-width: 1920px;
+  margin: 0 auto;
+  padding: var(--module-pad);
+  background: var(--c-sand-50);
+  border-radius: var(--module-radius) var(--module-radius) 0 0;
+  overflow: hidden;
+}
+
+.module__intro {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--intro-gap);
+  width: 52%;                 /* 995 / 1920 */
+  max-width: 995px;
+}
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 16px;
+  border-radius: 24px;
+  background: var(--c-yellow-300);
+  font: 600 var(--fs-label)/1 var(--font-body);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.module__copy {
+  display: flex;
+  flex-direction: column;
+  gap: var(--copy-gap);
+}
+
+.headline-1 {
+  margin: 0;
+  font: 700 var(--fs-headline-1)/1 var(--font-display);
+  letter-spacing: -0.02em;
+}
+
+.body-1 {
+  margin: 0;
+  font: 400 var(--fs-body-1)/1.4 var(--font-body);
+}
+
+/* --------------------------------------------------------------------------
+   Slider – Desktop-Geometrie (Figma 1:1 in Design-Pixeln)
+   -------------------------------------------------------------------------- */
+
+.tips-slider {
+  --slide-img-size: calc(581 * var(--px));
+  --slide-h: calc(580 * var(--px));
+  --slide-pill-w: calc(1066 * var(--px));
+  --slide-overlap: calc(158 * var(--px));   /* Pille überlappt den Kreis */
+  --slide-w: calc(1489 * var(--px));        /* 581 + 1066 − 158 */
+  --slide-gap: calc(232 * var(--px));
+  --slide-step: calc(var(--slide-w) + var(--slide-gap));
+  --slide-offset: calc(66 * var(--px));     /* linker Einzug des Tracks */
+
+  position: relative;
+  margin: 0 calc(-1 * var(--module-pad));  /* full-bleed innerhalb des Moduls */
+  padding: calc(120 * var(--px)) 0 calc(64 * var(--px));
+}
+
+.tips-slider__stage { position: relative; }
+
+.tips-slider__viewport {
+  overflow: hidden;
+  isolation: isolate;         /* eigener Stacking-Context: Button liegt immer darüber */
+  touch-action: pan-y;        /* horizontales Wischen geht an den Slider */
+  user-select: none;
+}
+
+/* Alle Slides liegen in derselben Grid-Zelle (→ Höhe = höchstes Slide)
+   und werden per left um ihren Index nach rechts geschoben. */
+.tips-slider__track {
+  --index: 0;                 /* wird per JS gesetzt */
+  display: grid;
+  justify-content: start;
+  margin: 0 0 0 var(--slide-offset);
+  padding: 0;
+  list-style: none;
+}
+
+.tip {
+  grid-area: 1 / 1;
+  position: relative;
+  left: calc(var(--i, 0) * var(--slide-step));
+  display: flex;
+  align-items: center;
+  width: var(--slide-w);
+}
+
+/* Ebenen: alle Pillen (z 2) liegen über allen Kreisen (z 1) – so gleitet der
+   schnellere Kreis beim Wechsel unter der Pille hindurch statt darüber.
+   Die Opacity liegt deshalb auf Kreis und Pille, nicht auf .tip
+   (Opacity < 1 oder transform auf .tip würde einen Stacking-Context erzeugen). */
+.tip__img,
+.tip__pill {
+  opacity: 0.1;
+  transform: translateX(calc(var(--index) * -1 * var(--slide-step)));
+  will-change: transform;
+}
+
+.tip.is-active .tip__img,
+.tip.is-active .tip__pill { opacity: 1; }
+
+/* Bildkreis – bewegt sich schneller (Parallax) */
+.tip__img {
+  position: relative;
+  z-index: 1;
+  flex: none;
+  width: var(--slide-img-size);
+  height: var(--slide-img-size);
+  transition:
+    transform var(--t-img) var(--ease-out-quint),
+    opacity var(--t-fade-out) var(--ease-in-quart);
+}
+
+.tip.is-active .tip__img {
+  transition:
+    transform var(--t-img) var(--ease-out-quint),
+    opacity var(--t-fade) ease;
+}
+
+.tip__img img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+/* Content-Pille – bewegt sich langsamer und mit kleinem Delay */
+.tip__pill {
+  position: relative;
+  z-index: 2;
+  flex: none;
+  display: flex;
+  align-items: center;
+  width: var(--slide-pill-w);
+  min-height: var(--slide-h);
+  margin-left: calc(-1 * var(--slide-overlap));
+  padding: calc(48 * var(--px)) calc(162 * var(--px));
+  border-radius: 1000px;
+  background: var(--c-dark-blue-500);
+  transition:
+    transform var(--t-pill) var(--ease-out-quint) var(--t-pill-delay),
+    opacity var(--t-fade-out) var(--ease-in-quart);
+}
+
+.tip.is-active .tip__pill {
+  transition:
+    transform var(--t-pill) var(--ease-out-quint) var(--t-pill-delay),
+    opacity var(--t-fade) ease;
+}
+
+.tip__content {
+  display: flex;
+  align-items: flex-start;
+  gap: calc(24 * var(--px));
+  width: 100%;                /* = 742 Design-Pixel */
+  color: var(--c-sand-10);
+}
+
+.tip__index {
+  display: flex;
+  align-items: center;
+  gap: 15px;                  /* Figma 7px + 8px */
+  flex: none;
+}
+
+.tip__number {
+  width: calc(80 * var(--px));
+  font: 700 var(--fs-headline-2)/1.12 var(--font-display);
+  letter-spacing: -0.02em;
+  text-align: center;
+}
+
+.tip__line {
+  width: 128px;               /* feste Länge auf allen Breakpoints */
+  height: 1px;
+  background: var(--c-sand-10);
+  transform-origin: 0 50%;
+}
+
+.tip__text {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  padding-top: calc(16 * var(--px));
+}
+
+.tip__text h3 {
+  margin: 0;
+  font: 700 var(--fs-headline-4)/1.2 var(--font-display);
+  letter-spacing: -0.01em;
+}
+
+.tip__text p {
+  margin: 0;
+  font: 400 var(--fs-body-2)/1.4 var(--font-body);
+}
+
+/* Text-Choreografie: inaktiv = ausgeblendet, aktiv = gestaffelt einblenden */
+.tip__number,
+.tip__text h3,
+.tip__text p {
+  opacity: 0;
+  transform: translateX(28px);
+  /* raus: nur ausblenden; der Transform-Reset passiert unsichtbar danach */
+  transition: opacity var(--t-text-out) ease, transform 0s linear var(--t-text-out);
+}
+
+.tip__line {
+  opacity: 0;
+  transform: scaleX(0);
+  transition: opacity var(--t-text-out) ease, transform 0s linear var(--t-text-out);
+}
+
+.tip.is-active .tip__number {
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity var(--t-text) var(--ease-out-quint) var(--text-delay),
+    transform var(--t-text) var(--ease-out-quint) var(--text-delay);
+}
+
+.tip.is-active .tip__line {
+  opacity: 1;
+  transform: scaleX(1);
+  transition:
+    opacity 0s linear calc(var(--text-delay) + var(--text-stagger)),
+    transform 700ms var(--ease-out-quint) calc(var(--text-delay) + var(--text-stagger));
+}
+
+.tip.is-active .tip__text h3 {
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity var(--t-text) var(--ease-out-quint) calc(var(--text-delay) + var(--text-stagger) * 2),
+    transform var(--t-text) var(--ease-out-quint) calc(var(--text-delay) + var(--text-stagger) * 2);
+}
+
+.tip.is-active .tip__text p {
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity var(--t-text) var(--ease-out-quint) calc(var(--text-delay) + var(--text-stagger) * 3),
+    transform var(--t-text) var(--ease-out-quint) calc(var(--text-delay) + var(--text-stagger) * 3);
+}
+
+/* „Abrollen“ des Bildkreises als Transition (nicht Keyframes): JS setzt --roll
+   auf ±Amplitude (Phase 1, kürzer) und danach zurück auf 0 (Phase 2, länger).
+   Eine Transition lässt sich mitten in der Bewegung neu anzielen – ein weiterer
+   Klick während der Rotation erzeugt deshalb keinen Sprung. */
+.tips-slider__track { --roll: 0deg; }
+
+.tip__img img {
+  rotate: var(--roll);
+  transition: rotate var(--t-roll-back) var(--ease-in-out-sine);
+}
+
+.tips-slider__track.is-rolling .tip__img img {
+  transition-duration: var(--t-roll-out);
+}
+
+/* Sofortiger Sprung ohne Transition (Loop-Reset). Betrifft nur Position,
+   Opacity und Text – die Rotation (.tip__img img) läuft weiter, alle Kreise
+   rollen synchron, deshalb bleibt der Sprung vom Klon aufs Original unsichtbar. */
+.no-transition .tip__img,
+.no-transition .tip__pill,
+.no-transition .tip__content * {
+  transition: none !important;
+}
+
+/* Button (Figma: 60px vom rechten Rand, vertikal mittig zum Slide) */
+.tips-slider__next {
+  position: absolute;
+  z-index: 1;
+  right: calc(60 * var(--px));
+  top: 50%;
+  translate: 0 -50%;
+}
+
+/* Indikator */
+.tips-slider__dots {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin: calc(40 * var(--px)) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tips-slider__dots li {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--c-dark-blue-500);
+  opacity: 0.2;
+  transition: opacity 300ms ease, transform 300ms var(--ease-out-quint);
+}
+
+.tips-slider__dots li.is-active { opacity: 1; }
+
+/* --------------------------------------------------------------------------
+   Slider – Zwischengrößen (kleine Desktops / Tablets quer, 1100–1439px):
+   Nummer + Linie rücken über den Text, der Lauftext bekommt die volle
+   Content-Breite der Pille. Sonst wird die Textspalte zu schmal und die
+   Pille zu hoch.
+   -------------------------------------------------------------------------- */
+
+@media (min-width: 1100px) and (max-width: 1439px) {
+  .tip__content {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .tip__index { width: 100%; }
+
+  .tip__number {
+    width: auto;
+    min-width: 2ch;
+    text-align: left;
+  }
+
+  .tip__text { padding-top: 0; }
+}
+
+/* --------------------------------------------------------------------------
+   Slider – Mobile / Tablet: gestapelt, ein Slide = volle Breite
+   -------------------------------------------------------------------------- */
+
+@media (max-width: 1099px) {
+  .tips-slider {
+    --slide-w: min(100cqw, 600px);                      /* Modul-Innenbreite, auf Tablets gedeckelt */
+    --slide-step: calc(100cqw + 2 * var(--module-pad)); /* Schritt = Innenbreite + beide Paddings → nächstes Slide startet außerhalb des Moduls */
+    --slide-offset: 0px;
+    --slide-img-size: min(72cqw, 320px);
+    --slide-overlap: calc(var(--slide-img-size) * 0.45); /* Kreis taucht 45 % in die Karte ein */
+
+    /* kürzere Wege → etwas kürzere Zeiten */
+    --t-img: 1100ms;
+    --t-pill: 1300ms;
+    --t-pill-delay: 120ms;
+    --text-delay: 520ms;
+
+    margin: 0;
+    padding: 32px 0 0;
+  }
+
+  /* Slides laufen bis zum Modulrand aus, nicht bis zum Padding (Clipping macht das Modul) */
+  .tips-slider__viewport { overflow: visible; }
+
+  .tips-slider__track {
+    width: fit-content;
+    margin: 0 auto;           /* gedeckelte Karte mittig */
+  }
+
+  .tip {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  /* Auf der Karte liegt der Kreis oben (anders als auf Desktop) */
+  .tip__img { z-index: 3; }
+
+  /* Kein Geistern: außerhalb ist ohnehin nichts zu sehen, der alte Slide
+     scrollt voll sichtbar raus, der neue voll sichtbar rein */
+  .tip__img,
+  .tip__pill { opacity: 1; }
+
+  .tip__pill {
+    width: 100%;
+    min-height: 0;
+    margin: calc(-1 * var(--slide-overlap)) 0 0;
+    padding: calc(var(--slide-overlap) + 24px) 24px 32px;
+    border-radius: 40px;
+  }
+
+  .tip__content {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .tip__index { width: 100%; }
+
+  .tip__number {
+    width: auto;
+    min-width: 2ch;
+    text-align: left;
+  }
+
+  .tip__text { padding-top: 0; }
+
+  .tips-slider .tips-slider__next { display: none; }  /* Spezifität > .btn */
+
+  .tips-slider__dots { margin-top: 24px; }
+}
+
+/* --------------------------------------------------------------------------
+   Buttons
+   -------------------------------------------------------------------------- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 56px;
+  border-radius: 100px;
+  font: 600 var(--fs-label)/1 var(--font-body);
+  text-transform: uppercase;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 200ms ease, color 200ms ease, transform 200ms var(--ease-out-quint);
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--c-dark-blue-500);
+  outline-offset: 4px;
+}
+
+.btn:active { transform: scale(0.96); }
+
+.btn--outline {
+  padding: 0 32px;
+  border: 2px solid var(--c-dark-blue-500);
+  background: transparent;
+  color: var(--c-dark-blue-500);
+}
+
+.btn--outline:hover {
+  background: var(--c-dark-blue-500);
+  color: var(--c-sand-10);
+}
+
+.btn--primary {
+  gap: 24px;
+  padding: 8px 8px 8px 32px;
+  border: 0;
+  background: var(--c-dark-blue-500);
+  color: var(--c-sand-10);
+}
+
+.btn__icon {
+  display: block;
+  width: 40px;
+  height: 40px;
+  transition: transform 300ms var(--ease-out-quint);
+}
+
+.btn--primary:hover .btn__icon { transform: translateX(4px); }
+
+/* --------------------------------------------------------------------------
+   CTA-Box
+   -------------------------------------------------------------------------- */
+
+.cta {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 64px;
+  margin-top: var(--cta-gap);
+  padding: 40px;
+  border: 1px solid var(--c-dark-blue-500);
+  border-radius: 40px;
+}
+
+.cta__body {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 40px;
+}
+
+.cta__text {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.cta__text h2 {
+  margin: 0;
+  font: 700 var(--fs-headline-3)/1.2 var(--font-display);
+  letter-spacing: -0.01em;
+}
+
+.cta__text p {
+  margin: 0;
+  font: 400 var(--fs-body-2)/1.4 var(--font-body);
+}
+
+.cta__body .btn { align-self: flex-start; }
+
+.cta__media {
+  aspect-ratio: 887 / 578;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.cta__media img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 30%;
+}
+
+@media (max-width: 1099px) {
+  .module__intro {
+    width: 100%;
+    max-width: none;
+  }
+
+  /* CTA: Text → Bild → Button untereinander */
+  .cta {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    padding: 24px;
+    border-radius: 24px;
+  }
+
+  .cta__body { display: contents; }
+  .cta__text { order: 1; }
+  .cta__media { order: 2; }
+  .cta__body .btn { order: 3; }
+}
+
+/* --------------------------------------------------------------------------
+   Reduced Motion
+   -------------------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --t-img: 300ms;
+    --t-pill: 300ms;
+    --t-pill-delay: 0ms;
+    --t-text: 200ms;
+    --text-delay: 150ms;
+    --text-stagger: 0ms;
+    --t-roll-out: 1ms;
+    --t-roll-back: 1ms;
+    --wheel-roll: 0deg;
+  }
+}
