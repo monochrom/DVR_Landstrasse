@@ -492,7 +492,7 @@ img { -webkit-user-drag: none; }
     min-height: 0;
     margin: calc(-1 * var(--slide-overlap)) 0 0;
     padding: calc(var(--slide-overlap) + 24px) 24px 32px;
-    border-radius: 40px;
+    border-radius: 16px;
   }
 
   .tip__content {
